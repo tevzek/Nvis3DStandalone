@@ -1,0 +1,47 @@
+
+
+Fri Apr 29 18:19:00 2022
+Command line: TestDisk
+
+TestDisk 7.0, Data Recovery Utility, April 2015
+Christophe GRENIER <grenier@cgsecurity.org>
+http://www.cgsecurity.org
+OS: Linux, kernel 5.4.0-109-generic (#123~18.04.1-Ubuntu SMP Fri Apr 8 09:48:52 UTC 2022) x86_64
+Compiler: GCC 7.2
+ext2fs lib: 1.44.1, ntfs lib: libntfs-3g, reiserfs lib: none, ewf lib: none, curses lib: ncurses 6.0
+/dev/sda: LBA, LBA48 support
+/dev/sda: size       1000215216 sectors
+/dev/sda: user_max   1000215216 sectors
+/dev/sdb: LBA, HPA, LBA48, DCO support
+/dev/sdb: size       1953525168 sectors
+/dev/sdb: user_max   1953525168 sectors
+/dev/sdb: native_max 1953525168 sectors
+/dev/sdb: dco        1953525168 sectors
+Warning: can't get size for Disk /dev/mapper/control - 0 B - 0 sectors, sector size=512
+Hard disk list
+Disk /dev/sda - 512 GB / 476 GiB - CHS 62260 255 63, sector size=512 - Micron_1100_MTFDDAV512TBN, S/N:1651150E2AE7, FW:M0MA020
+Disk /dev/sdb - 1000 GB / 931 GiB - CHS 121601 255 63, sector size=512 - Samsung SSD 860 QVO 1TB, S/N:S4CZNF0MA01339X, FW:RVQ02B6Q
+
+Partition table type (auto): EFI GPT
+Disk /dev/sda - 512 GB / 476 GiB - Micron_1100_MTFDDAV512TBN
+Partition table type: EFI GPT
+
+Interface Advanced
+hdr_size=92
+hdr_lba_self=1
+hdr_lba_alt=1000215215 (expected 1000215215)
+hdr_lba_start=34
+hdr_lba_end=1000215182
+hdr_lba_table=2
+hdr_entries=128
+hdr_entsz=128
+check_part_gpt failed for partition
+ 3 P MS Reserved              1290240    1323007      32768 [Microsoft reserved partition]
+ 1 P Unknown                     2048    1085439    1083392 [Basic data partition]
+ 2 P EFI System               1085440    1290239     204800 [EFI system partition]
+ 3 P MS Reserved              1290240    1323007      32768 [Microsoft reserved partition]
+ 4 P MS Data                  1323008  871926594  870603587 [Basic data partition]
+     NTFS, blocksize=4096, 445 GB / 415 GiB
+ 5 P Unknown                871927808 1000214527  128286720
+
+TestDisk exited normally.
