@@ -23,7 +23,7 @@ A more descriptive table is seen down below
 | /neurovis/updateDisplay     | Int32MultiArray   | Updates the display with id                               | [0,0,0,255,0,255,0,0,0,100,100,100] | [id, r1, g1, b1, r2, b2, g2 ...]                                        |
 | /neurovis/setDisplayText    | String            | Updates the text on the display                           | "Hello world"                       | "String to display"                                                     |
 
-##Setup
+## Setup
 
 the setup is very similar to the original neurovis, the project was made on Ubuntu 18 with ROS melodic.
 
@@ -75,7 +75,7 @@ python Nvis3DStandalone/catkin_ws/src/neurovis3dstanalone/scripts/Nvis3D/NvisNod
 ```bash
 python pytorch1.py
 ```
-##Functionalities
+## Functionalities
 
 Below You can see an image explainging the functionalities
 
@@ -95,7 +95,15 @@ Below You can see an image explainging the functionalities
 
 7 - Micelanius tab. Micelanius functionalities, like randomly scatering neurons and hiding connections for better performance. 
 
-8 - Display tab. A tab that shows images send by ROS. They stack up verticaly.
+8 - Display tab. A tab that shows images send by the designated ROS topic. They stack up verticaly.
+
+9 - Layers. This tabs displays the layers, their names and the number of neurons in them. It also has the option to simplify a layer, making it a 2d plane, and dinamicaly drawing the neuron inputs on the texture. For performance reasons.
+
+10 - Minimize. Hides the currently selected tab. 
+
+11 - Debug output. There is global dictionary in the code, and if you and/change elements in it, it is displayed here. It exsists for debug purpuses.
+
+12 - Text input. Displays the text send by the designated ROS topic.
 
 
 
