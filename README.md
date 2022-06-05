@@ -6,20 +6,20 @@ Most of the relevant code can be found in https://github.com/tevzek/Nvis3DStanda
 
 ## ROS interface
 
-The project is build with a ROS Interface, enabeling easy integration with ROS related projects. The neurovis node subscribes to the following topics. 
+The project is build with a ROS Interface, enabling easy integration with ROS related projects. The neurovis node subscribes to the following topics.
 
 ![Nvis graph](https://github.com/tevzek/Nvis3DStandalone/blob/master/ReadMePics/graph.png?raw=true)
 
 A more descriptive table is seen down below
 
-| Topic name                  | Type              | Purpuse                                                   | Exsample                            | Note                                                                    |
+| Topic name                  | Type              | Purpose                                                   | Example                            | Note                                                                    |
 |-----------------------------|-------------------|-----------------------------------------------------------|-------------------------------------|-------------------------------------------------------------------------|
-| /neurovis/neuronName        | String            | Initilisez the neurons                                    | "A/B/C/"                            | "Name1/Name2/ ..."                                                      |
+| /neurovis/neuronName        | String            | Initializes the neurons                                    | "A/B/C/"                            | "Name1/Name2/ ..."                                                      |
 | /neurovis/neuronPos         | String            | Sets the positions                                        | "A_0_0_0/B_1_0_0/C_3_2.5_1/"        | "LayerName1_Layer(Z)_X_Y/ ...."                                         |
-| /neurovis/connections       | Float32MultiArray | Sets the connections                                      | [[0,1,1],[1,0,1],[1,1,0]]           | Connection matrix neuron N in colum N is connected to neuron M in row M |
+| /neurovis/connections       | Float32MultiArray | Sets the connections                                      | [[0,1,1],[1,0,1],[1,1,0]]           | Connection matrix neuron N in column N is connected to neuron M in row M |
 | /neurovis/connectionsLayers | String            | Sets the connections, but only for fully connected layers | "A-B/B-C/C-A/"                      | "LayerName1-LayerName2/ ..."                                            |
 | /neurovis/activity          | Float32MultiArray | Updates the activity                                      | [0,0,1]                             | [act1,act2,act3]                                                        |
-| /neurovis/createDisplay     | Int32MultiArray   | Creates a graphical display with id and dimentisons       | [0,2,2]                             | [id,X,Y]                                                                |
+| /neurovis/createDisplay     | Int32MultiArray   | Creates a graphical display with id and dimensions       | [0,2,2]                             | [id,X,Y]                                                                |
 | /neurovis/updateDisplay     | Int32MultiArray   | Updates the display with id                               | [0,0,0,255,0,255,0,0,0,100,100,100] | [id, r1, g1, b1, r2, b2, g2 ...]                                        |
 | /neurovis/setDisplayText    | String            | Updates the text on the display                           | "Hello world"                       | "String to display"                                                     |
 
