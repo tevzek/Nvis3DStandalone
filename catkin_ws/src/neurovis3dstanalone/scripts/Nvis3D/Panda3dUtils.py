@@ -977,7 +977,7 @@ class guiControler():
         inputBut = DirectButton(
             text=("Input"),
             scale=.05,
-            frameColor=((0.15 - 0.5, 0.2, 0.3, 0.6), (0.2, 0.4, 0.4, 0.6), (0.15, 0.2, 0.4, 0.8)),
+            frameColor=((0.15, 0.2, 0.3, 0.6), (0.2, 0.4, 0.4, 0.6), (0.15, 0.2, 0.4, 0.8)),
             parent=self.selectorFrame,
             pos=(-0.82 + offset, 0, -0.05),
             command=self.hideTabs,

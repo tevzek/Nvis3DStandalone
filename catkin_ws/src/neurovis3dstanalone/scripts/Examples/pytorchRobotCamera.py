@@ -1,7 +1,9 @@
 import math
+import cv2
 
 import numpy
 import torch
+
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,99 +11,22 @@ import torch.optim as optim
 import numpy as np
 import matplotlib.pyplot as plt
 from std_msgs.msg import String, Float32MultiArray, MultiArrayDimension, Int16MultiArray, Int16, Int32MultiArray
-
+from torchvision import transforms
 import rospy
 import numpy as np
+from PIL import Image
 
 picSize = 200
-squareSize = 30
-
-
-def makeAPic(picSize,squareSize,howMuchLeft=0,howMuchscale=1):
-    squareSize *=howMuchscale
-    squareSize = int(squareSize)
-    pic = np.zeros((picSize,picSize),dtype=np.uint8)
-    x1 = picSize// 2- squareSize//2-howMuchLeft
-    x2 = picSize // 2 + squareSize // 2 - howMuchLeft
-    y1 = picSize // 2 - squareSize // 2
-    y2 = picSize // 2 + squareSize // 2
-    if x1 < 0:
-        x1 = 0
-    if x1 >= picSize:
-        x1 = picSize-1
-    if x2 < 0:
-        x2 = 0
-    if x2 >= picSize:
-        x2 = picSize-1
-    if y1 < 0:
-        y1 = 0
-    if y2 >= picSize:
-        y2 = picSize-1
-    if y2 < 0:
-        y2 = 0
-    if y2 >= picSize:
-        y2 = picSize-1
-
-
-    pic[x1:x2:,y1:y2 :] = 1
-    return pic
-
-numOfFrames = 100
-frames = numOfFrames
-
-scale = 1
-scaleMax = 2.5
-scaleMin=0.3
-step = 0.03
-stepUp = True
-
-left = 0
-leftMax = 150
-leftMin = -150
-leftStep = 2
-leftUp = True
-
-
-picStorage = []
-
-while frames > 0:
-
-    pic = makeAPic(picSize,squareSize,left,scale)
-    if stepUp:
-        scale += step
-        if scale >= scaleMax:
-            stepUp = False
-    else:
-        scale -= step
-        if scale <= scaleMin:
-            stepUp = True
-
-    if leftUp:
-        left += leftStep
-        if left >= leftMax:
-            leftUp = False
-    else:
-        left -= leftStep
-        if left <= leftMin:
-            leftUp = True
-
-    #add noise
-    row, col, ch =  (picSize,picSize,1)
-    mean = 0
-    var = 0.02
-    sigma = var ** 0.5
-    gauss = np.random.normal(mean, sigma, (row, col, ch))
-    gauss = gauss.reshape(row, col)
-    pic = pic + gauss
-    frames -= 1
-
-
-    picStorage.append(pic)
+power = 1.0
+dec = True
 
 
 torch.manual_seed(2)
 
 finalNnSize = int(((((picSize-4)/2)-4)/2/2))**2
+
+fakeFrame = Image.open("./blueBall.jpg")
+
 
 class NET3(nn.Module):
     def __init__(self, input_dim=2, output_dim=1):
@@ -157,10 +82,52 @@ class NET3(nn.Module):
         return x
 
 
+
+vc = cv2.VideoCapture(2)
+
+
+def getNextFrame():
+    global power
+    global dec
+
+
+    frame = None
+    if vc.isOpened():  # try to get the first frame
+        rval, frame = vc.read()
+    else:
+        frame = np.zeros((3,3,3))
+
+
+    imageIn = cv2.resize(frame, dsize=(picSize, picSize), interpolation=cv2.INTER_CUBIC)
+    #image = fakeFrame.resize((picSize,picSize),Image.ANTIALIAS)
+    #image = convert_tensor(imageIn)
+    #image *= power
+    image = np.copy(imageIn)
+    image = image.astype(int)
+
+    truArr = ((image[::, ::, 0] + image[::, ::, 1]) * 0.7) < image[::, ::, 2]
+    if dec:
+        power -= 0.1
+        if power <= 0:
+            dec = False
+    else:
+        power += 0.1
+        if power >= 1:
+            dec = True
+
+    image = image[::,::,2]
+    image = np.where(truArr, image, 0)
+    return (image,imageIn)
 net = NET3()
 
 
-tens = torch.from_numpy(numpy.reshape(picStorage[0],(1,1,picStorage[0].shape[0],picStorage[0].shape[0]))).float()
+
+
+tens, _ = getNextFrame()
+tens = tens / 255
+tens = torch.from_numpy(tens)
+tens = torch.reshape(tens, (1,1,picSize, picSize))
+tens = tens.float()
 print(net(tens))
 tt = 0
 
@@ -190,8 +157,11 @@ pubCon = rospy.Publisher('/neurovis/connections', Float32MultiArray, queue_size=
 pubPos = rospy.Publisher('/neurovis/neuronPos', String, queue_size=1)
 pubAct = rospy.Publisher('/neurovis/activity', Float32MultiArray, queue_size=1)
 
-pubCreaDis = rospy.Publisher('/neurovis/createDisplay', Int32MultiArray, queue_size=1)
+pubCreaDis = rospy.Publisher('/neurovis/createDisplay', Int32MultiArray, queue_size=2)
 pubUpdDis = rospy.Publisher('/neurovis/updateDisplay', Int32MultiArray, queue_size=1)
+
+fwd = rospy.Publisher('/morf_hcmd/morf_fwd_speed', Float32MultiArray, queue_size=1)
+
 
 rate = rospy.Rate(3)  # 3hz
 
@@ -231,20 +201,23 @@ pubPos.publish(pos)
 
 pubPos.publish(pos)
 publish1DArrInt(pubCreaDis,[1,picSize,picSize])
+publish1DArrInt(pubCreaDis,[2,picSize,picSize])
+
 
 indx = 0
 
 
 
 while not rospy.is_shutdown():
-    tens = torch.from_numpy(numpy.reshape(picStorage[indx], (1, 1, picStorage[indx].shape[0], picStorage[indx].shape[0]))).float()
-    indx += 1
-    if indx >= numOfFrames:
-        indx = 0
+    tens, org = getNextFrame()
 
+    tens = tens / 255
+    tens = torch.from_numpy(tens)
+    tens = torch.reshape(tens, (1, 1, picSize, picSize))
+    tens = tens.float()
     out = net(tens)
 
-    tempPic = picStorage[indx].copy()
+    tempPic = tens.detach().numpy()
     tempPic = np.abs(tempPic)
     tempPic = np.rot90(tempPic, 1)
     tempPic *= 255
@@ -257,8 +230,17 @@ while not rospy.is_shutdown():
 
     publish1DArrInt(pubUpdDis, tempPic)
 
+    tempPic = org
+    tempPic = tempPic.flatten()
+    tempPic = np.clip(tempPic, 0, 255)
+    tempPic = np.concatenate(([2],tempPic)).astype(np.int32)
+
+    publish1DArrInt(pubUpdDis, tempPic)
+
     act = np.concatenate((net.reluOutArr,net.relu1OutArr,net.outOutArr))
     publish1DArr(pubAct, act)
+
+    publish1DArr(fwd,net.relu1OutArr)
 
     rate.sleep()
 

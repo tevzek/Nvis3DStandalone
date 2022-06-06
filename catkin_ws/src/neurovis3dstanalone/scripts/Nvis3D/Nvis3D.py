@@ -1,8 +1,10 @@
 import random
+import time
 
 import bezier
 import numpy
 import numpy as np
+from direct.showbase.ShowBaseGlobal import globalClock
 from panda3d.core import LPoint3
 import math
 
@@ -641,8 +643,17 @@ class NeuroVis3D(ShowBase):
             self.nvisInterface.amIsetingDisplayText = False
         return task.cont
 
+    def fpsCounter(self, task):
+        fr = globalClock.getAverageFrameRate()
+        print(str(fr))
+        return task.cont
+
+
     def start(self):
         ShowBase.__init__(self)
+
+        self.fps = 0
+        self.PrevTime = 0
 
         self.picker = CollisionTraverser()
         self.pusher = CollisionHandlerPusher()
@@ -658,6 +669,8 @@ class NeuroVis3D(ShowBase):
 
         self.softPushingWallDistance = 30
         self.softPushingWallStrenght = 0.0001
+
+        self.setBackgroundColor(0.2, 0.2, 0.2)
 
         self.amIPushing = False
         self.showPushingDistance = False
@@ -688,6 +701,7 @@ class NeuroVis3D(ShowBase):
         self.mainLightNodePath.setHpr(45, -45, 0)
         self.render.setLight(self.mainLightNodePath)
         self.render.setShaderAuto()
+
 
         # make the floor
         floor = self.loader.loadModel("res/PandaRes/Square.egg")
@@ -753,6 +767,9 @@ class NeuroVis3D(ShowBase):
 
         #update neurons every frame
         self.taskMgr.add(self.updateNeurons, 'Update neurons and cons')
+
+        #self.taskMgr.add(self.fpsCounter, 'fps')
+
         #update selected neuron text every frame
         self.taskMgr.add(self.gc.updateSelectedNeuronText, 'Update selected neuron text')
 

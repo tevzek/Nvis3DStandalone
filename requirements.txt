@@ -1,0 +1,6 @@
+bezier
+Panda3D
+numpy
+networkx
+rospkg
+torch
