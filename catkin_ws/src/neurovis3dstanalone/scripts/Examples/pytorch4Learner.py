@@ -1,3 +1,5 @@
+import random
+
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
@@ -12,39 +14,25 @@ import rospy
 torch.manual_seed(2)
 
 X = torch.Tensor([[0, 0], [0, 1], [1, 0], [1, 1]])
-
+Y = torch.Tensor([[0], [1], [1], [1]])
 
 class NET2(nn.Module):
     def __init__(self, input_dim=2, output_dim=1):
         super(NET2, self).__init__()
 
         self.activity = np.zeros(5)
+        self.weights = np.zeros(6)
+
 
         self.in1 = nn.Linear(1, 1, bias=False)
         self.in2 = nn.Linear(1, 1, bias=False)
-
+        self.in1.weight.data = torch.tensor([[1.0]])
+        self.in2.weight.data = torch.tensor([[1.0]])
         self.h1 = nn.Linear(2, 1, bias=True)
         self.h2 = nn.Linear(2, 1, bias=True)
 
         self.h3 = nn.Linear(2, 1, bias=True)
 
-        self.O = nn.Linear(1, 1, bias=False)
-
-        self.in1.weight.data = torch.tensor([[1.0]])
-        self.in2.weight.data = torch.tensor([[1.0]])
-
-        # self.in1.bias.data = torch.tensor([0.0])
-        # self.in2.bias.data = torch.tensor([0.0])
-
-        self.h1.weight.data = torch.tensor([[6.29,6.29]])
-        self.h2.weight.data = torch.tensor([[-7.65,-7.66]])
-        self.h1.bias.data = torch.tensor([-9.69])
-        self.h2.bias.data = torch.tensor([3.17])
-
-        self.h3.weight.data = torch.tensor([[15.45, 15.26]])
-        self.h3.bias.data = torch.tensor([-7.57])
-
-        self.O.weight.data = torch.tensor([[1.0]])
 
 
     def forward(self, x):
@@ -67,12 +55,11 @@ class NET2(nn.Module):
         AB3 = F.sigmoid(x)
         self.activity[4] = AB3
 
-        O = self.O(x)
-        #self.activity[5] = O
+
+        self.weights = np.array([self.h1.weight.data[0][0],self.h1.weight.data[0][1],self.h2.weight.data[0][0],self.h2.weight.data[0][1],self.h3.weight.data[0][0],self.h3.weight.data[0][1]])
 
 
-
-        return O
+        return AB3
 
 
 model = NET2()
@@ -86,10 +73,10 @@ print(model(torch.tensor([0.0, 0.0])))
 
 # connection arr by hand cus its faster
 connArr = np.array([
-    [0.0, 0.0, 6.29, -7.65, 0.0],
-    [0.0, 0.0, 6.29, -7.66, 0.0],
-    [0.0, 0.0, 0.0, 0.0, 15.45],
-    [0.0, 0.0, 0.0, 0.0, 15.26],
+    [0.0, 0.0, 1, -1, 0.0],
+    [0.0, 0.0, 1, -1, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 1],
+    [0.0, 0.0, 0.0, 0.0, 1],
     [0.0, 0.0, 0.0, 0.0, 0.0]
 ])
 connArr = connArr.flatten()
@@ -112,11 +99,12 @@ pubName = rospy.Publisher('/neurovis/neuronName', String, queue_size=1)
 pubCon = rospy.Publisher('/neurovis/connections', Float32MultiArray, queue_size=1)
 pubPos = rospy.Publisher('/neurovis/neuronPos', String, queue_size=1)
 pubAct = rospy.Publisher('/neurovis/activity', Float32MultiArray, queue_size=1)
+pubWe = rospy.Publisher('/neurovis/weightsAll', Float32MultiArray, queue_size=1)
+
 
 pubCreaDis = rospy.Publisher('/neurovis/createDisplay', Int32MultiArray, queue_size=1)
 pubUpdDis = rospy.Publisher('/neurovis/updateDisplay', Int32MultiArray, queue_size=1)
-
-
+pubText = rospy.Publisher("/neurovis/setDisplayText", String, queue_size=1)
 
 
 
@@ -144,7 +132,7 @@ def publish1DArrInt(pub, arr):
     pub.publish(a)
 
 
-rate = rospy.Rate(3)  # 3hz
+rate = rospy.Rate(1)  # 3hz
 
 while pubName.get_num_connections() <= 0:
     rate.sleep()
@@ -161,8 +149,27 @@ pubPos.publish(pos)
 #publish1DArr(pubWeight, updatedWeights)
 publish1DArr(pubAct, model.activity)
 
+criterion = nn.MSELoss()
+optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
+
+
 while not rospy.is_shutdown():
     data_point = X[np.random.randint(X.size(0))]
-    model(torch.tensor(data_point))
+    #we train the thing
+    input = 0
+    output = 0
+    outputs = None
+    for i in range(20):
+        ran = random.randint(0,len(X)-1)
+        input, output = X[ran],Y[ran]
+        optimizer.zero_grad()
+        outputs = model(input)
+        loss = criterion(outputs, output)
+        loss.backward()
+        optimizer.step()
     publish1DArr(pubAct, model.activity)
+    publish1DArr(pubWe, model.weights)
+    #print(model.weights)
+    pubText.publish("Err: " + str(outputs - output))
+
     rate.sleep()

@@ -26,6 +26,11 @@ class Neuron:
 
     self.originalpPos = self.pos.copy()
     self.layer = ""
+  def findConnectionOutByName(self,name):
+    for i in self.connectionsOut:
+      if i.name == name:
+        return i
+    return None
   def get3DPos(self):
     try:
       #return ([self.pos[0]/10,self.pos[1]/10,self.pos[2]/10])
@@ -39,8 +44,18 @@ class Neuron:
 
 class NeuronConnection:
   idd = 0
+  maxWeight = -1000000
+  minWeight = 1000000
   def __init__(self,fromN,toN,weight=0.5,controlPoint=np.zeros(3),arrowPos=np.zeros(3),previousWeight=0):
     self.weight = weight
+    if self.maxWeight < weight:
+      self.maxWeight = weight
+
+    if self.minWeight > weight:
+      self.minWeight = weight
+
+    self.updatedWeight = False
+    self.previousWeight = weight
 
     self.controlPoint = controlPoint.copy()
 
@@ -66,6 +81,18 @@ class NeuronConnection:
   def get3DControlPoint(self):
 
     return [self.controlPoint[0],self.controlPoint[1], self.controlPoint[2]]
+
+  def updateWeight(self,weight):
+    self.previousWeight = self.weight
+    self.weight = weight
+    self.updatedWeight = True
+
+    if self.maxWeight < weight:
+      self.maxWeight = weight
+
+    if self.minWeight > weight:
+      self.minWeight = weight
+
 class NeuronLayer:
   def __init__(self,name):
     #neuron layer

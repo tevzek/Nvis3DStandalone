@@ -97,6 +97,12 @@ class NeuroVis3D(ShowBase):
                 # todo ask zumo if ths is ok
                 '''
                 cols = self.getColorFromValues(i.activity)
+                cols2 = [0,0,0.2]
+
+                if j.weight <= 0:
+                    cols2 = self.getColorFromValues(j.weight,-j.minWeight,j.minWeight)
+                if j.weight > 0:
+                    cols2 = self.getColorFromValues(j.weight,-j.maxWeight,j.maxWeight)
                 if j.model == None:
                     # self.makeLine(i.get3Dpos(), connectedN.get3Dpos(), width=2.5, col = cols)
                     # l = self.makeLine(i.get3Dpos(), connectedN.get3Dpos(), width=3.5, col = cols)
@@ -109,17 +115,40 @@ class NeuroVis3D(ShowBase):
                     line = j.model[0]
                     # line.setColor(cols[0],cols[1],cols[2],1)
                     vert = line.getVertices()
+                    # we check if there was a change in the weights and we redraw the line
+                    if j.updatedWeight:
+                        node = j.model[2]
+                        node.removeNode()
+                        line = LineSegs()
+                        line.setThickness(abs(j.weight))
+                        line.setColor(cols[0], cols[1], cols[2])
+                        j.updatedWeight = False
+                        line.reset()
+                        for v in vert:
+                            line.drawTo(v)
+                        node = line.create("lines")
+                        ndp = NodePath(node)
+                        ndp.reparentTo(self.render)
+                        j.model = (line, j.model[1], ndp, j.model[3])
+                    else:
+                        for v in range(len(vert)):
+                            line.setVertexColor(v, cols[0], cols[1], cols[2])
 
-                    for v in range(len(vert)):
-                        line.setVertexColor(v, cols[0], cols[1], cols[2])
                     cone = j.model[1]
                     if cone is not None:
-                        cone.setColor(cols[0], cols[1], cols[2],1)
+                        cone.setColor(cols2[0], cols2[1], cols2[2], 1)
+                        # we update the sphere as well
+                        change = abs(j.previousWeight - j.weight)
+                        # lets say that if we update the weights more than 0.01 its a big change
+                        bigChange = 0.01
+                        changeFactor = change / bigChange
+                        colChange = np.array([1.0, 1.0])
+                        colChange *= changeFactor
+                        colChange = np.clip(colChange, 0.0, 1.0)
+                        changeSphere = j.model[3]
+                        changeSphere.setColor(colChange[0], colChange[1], 0.2)
 
-
-                    tt = 0
-
-                # we make a arrow here
+            # we make a arrow here
 
     def updateNeuronsByEachLayer(self):
         for lkey,li in self.nvisInterface.layers.copy().items():
@@ -156,11 +185,16 @@ class NeuroVis3D(ShowBase):
                         # todo ask zumo if ths is ok
                         '''
                         cols = self.getColorFromValues(i.activity)
+                        cols2 = [0,0,0.4]
+                        if j.weight <= 0:
+                            cols2 = self.getColorFromValues(j.weight, -j.minWeight, j.minWeight)
+                        if j.weight > 0:
+                            cols2 = self.getColorFromValues(j.weight, j.maxWeight, -j.maxWeight)
                         if j.model == None:
                             # self.makeLine(i.get3Dpos(), connectedN.get3Dpos(), width=2.5, col = cols)
                             # l = self.makeLine(i.get3Dpos(), connectedN.get3Dpos(), width=3.5, col = cols)
                             l = self.makeLineBezier(j.fromNeuron.get3DPos(), j.toNeuron.get3DPos(),
-                                                    controlPoint=j.get3DControlPoint(), width=2.5, col=cols, arrow=True)
+                                                    controlPoint=j.get3DControlPoint(), width=abs(j.weight), col=cols, arrow=True)
 
                             j.model = l
                         else:
@@ -168,12 +202,40 @@ class NeuroVis3D(ShowBase):
                             line = j.model[0]
                             # line.setColor(cols[0],cols[1],cols[2],1)
                             vert = line.getVertices()
-                            for v in range(len(vert)):
-                                line.setVertexColor(v, cols[0], cols[1], cols[2])
+                            # we check if there was a change in the weights and we redraw the line
+                            if j.updatedWeight:
+                                node = j.model[2]
+                                node.removeNode()
+                                line = LineSegs()
+                                line.setThickness(abs(j.weight))
+                                line.setColor(cols[0], cols[1], cols[2])
+                                j.updatedWeight = False
+                                line.reset()
+                                for v in vert:
+                                    line.drawTo(v)
+                                node = line.create("lines")
+                                ndp = NodePath(node)
+                                ndp.reparentTo(self.render)
+                                j.model = (line,j.model[1],ndp,j.model[3])
+                            else:
+                                for v in range(len(vert)):
+                                    line.setVertexColor(v, cols[0], cols[1], cols[2])
+
 
                             cone = j.model[1]
                             if cone is not None:
-                                cone.setColor(cols[0], cols[1], cols[2], 1)
+                                cone.setColor(cols2[0], cols2[1], cols2[2], 1)
+                                #we update the sphere as well
+                                change = abs(j.previousWeight - j.weight)
+                                #lets say that if we update the weights more than 0.01 its a big change
+                                bigChange = 0.01
+                                changeFactor = change/bigChange
+                                colChange = np.array([1.0,1.0])
+                                colChange *= changeFactor
+                                colChange = np.clip(colChange,0.0,1.0)
+                                changeSphere = j.model[3]
+                                changeSphere.setColor(colChange[0],colChange[1],0.2)
+
 
                             tt = 0
 
@@ -279,7 +341,7 @@ class NeuroVis3D(ShowBase):
             # self.makeLine(i.get3Dpos(), connectedN.get3Dpos(), width=2.5, col = cols)
             # l = self.makeLine(i.get3Dpos(), connectedN.get3Dpos(), width=2.5, col = cols)
             l = self.makeLineBezier(i.get3DPos(), connectedN.get3DPos(), controlPoint=j.get3DControlPoint(),
-                                    width=2.5, col=cols, arrow=True)
+                                    width=abs(j.weight), col=cols, arrow=True)
             j.model = l
 
         # we draw text on top of neurons here
@@ -509,11 +571,11 @@ class NeuroVis3D(ShowBase):
         lines = LineSegs()
         lines.setColor(col[0], col[1], col[2], 1)
         lines.moveTo(fromm[0], fromm[1], fromm[2])
+        lines.setThickness(width)
 
         for i in range(len(curvePoints[1])):
             lines.drawTo(curvePoints[0][i], curvePoints[1][i], curvePoints[2][i])
             # lines.moveTo(curvePoints[0][i],curvePoints[1][i],curvePoints[2][i])
-        lines.setThickness(width)
         node = lines.create("lines")
         ndp = NodePath(node)
         ndp.reparentTo(self.render)
@@ -525,15 +587,25 @@ class NeuroVis3D(ShowBase):
 
             cone = self.loader.loadModel("res/PandaRes/Cone.egg")
             cone.setPos(arrowPos[0], arrowPos[1], arrowPos[2])
+            cone.setScale(1.5)
             cone.setColor(0.5, 0.2, 0.2, 1)
             cone.reparentTo(self.render)
             cone.getChild(0).setP(-90)
 
             cone.lookAt(next1[0],next1[1],next1[2])
 
-            return (lines, cone)
+            sphere = self.loader.loadModel("res/PandaRes/Sphere2.egg")
+            SpherePos = np.array([curvePoints[0][(points//2)-3],curvePoints[1][(points//2)-3],curvePoints[2][(points//2)-3]])
 
-        return (lines, None)
+            sphere.setPos(SpherePos[0], SpherePos[1], SpherePos[2])
+            sphere.setScale(0.3)
+            sphere.setColor(0.5, 0.5, 0.2, 1)
+            sphere.reparentTo(self.render)
+
+
+            return (lines, cone,ndp,sphere)
+
+        return (ndp, None,ndp,None)
     def drawBorders(self, task):
         #we draw the borders here
         if self.clickedNeuron != None and self.showPushingDistance:
@@ -583,6 +655,13 @@ class NeuroVis3D(ShowBase):
             cone.setPos(arrowPos[0],arrowPos[1],arrowPos[2])
             cone.lookAt(next[0],next[1],next[2])
 
+            sphere = conn.model[3]
+            SpherePos = np.array([curvePoints[0][(points // 2) - 3], curvePoints[1][(points // 2) - 3],
+                                  curvePoints[2][(points // 2) - 3]])
+
+            sphere.setPos(SpherePos[0], SpherePos[1], SpherePos[2])
+
+
 
         tt = 0
 
@@ -625,13 +704,21 @@ class NeuroVis3D(ShowBase):
             coneNodes = self.render.findAllMatches("Cone.egg")
             for l in coneNodes:
                 l.show()
+            sphereNodes = self.render.findAllMatches("Sphere2.egg")
+            for l in sphereNodes:
+                l.show()
+
         else:
+            '''
             lineNodes = self.render.findAllMatches("lines")
             for l in lineNodes:
                 l.hide()
-
+            '''
             coneNodes = self.render.findAllMatches("Cone.egg")
             for l in coneNodes:
+                l.hide()
+            sphereNodes = self.render.findAllMatches("Sphere2.egg")
+            for l in sphereNodes:
                 l.hide()
 
     def eventSniffer(self, task):
@@ -671,6 +758,7 @@ class NeuroVis3D(ShowBase):
         self.softPushingWallStrenght = 0.0001
 
         self.setBackgroundColor(0.2, 0.2, 0.2)
+        #self.setBackgroundColor(1., 1., 1.)
 
         self.amIPushing = False
         self.showPushingDistance = False
@@ -702,7 +790,7 @@ class NeuroVis3D(ShowBase):
         self.render.setLight(self.mainLightNodePath)
         self.render.setShaderAuto()
 
-
+        '''
         # make the floor
         floor = self.loader.loadModel("res/PandaRes/Square.egg")
         floor.reparentTo(self.render)
@@ -710,6 +798,7 @@ class NeuroVis3D(ShowBase):
         floor.setColor(0.5, 0.5, 0.7, 1)
         floor.setP(-90)
         floor.setScale(50)
+        '''
 
         #make the spheres that shows the hard and soft wall
         self.sphereDim = 3.2808398950131235*2

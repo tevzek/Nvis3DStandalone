@@ -1,5 +1,6 @@
 import math
 import cv2
+import networkx
 
 import numpy
 import torch
@@ -40,7 +41,6 @@ class NET3(nn.Module):
 
         self.reluOutArr = np.zeros((23*23))
         self.relu1OutArr = np.zeros((1))
-        self.outOutArr = np.zeros((1))
 
 
     def forward(self, x):
@@ -69,22 +69,20 @@ class NET3(nn.Module):
         self.relu.weight.data = x * 0.2
 
         # flatten all dimensions except batch
-        x = F.relu(self.relu(x))
+        #x = F.relu(self.relu(x))
+        x = self.relu(x)
+        x -= 0.29
+        x *= 2
         a = x.detach().numpy()
         self.relu1OutArr = a.copy().flatten()
 
-
-
-        x = F.tanh(self.out(x))
-        a = x.detach().numpy()
-        self.outOutArr = a.copy().flatten()
 
         return x
 
 
 
 vc = cv2.VideoCapture(2)
-
+#vc = cv2.VideoCapture(0)
 
 def getNextFrame():
     global power
@@ -103,9 +101,10 @@ def getNextFrame():
     #image = convert_tensor(imageIn)
     #image *= power
     image = np.copy(imageIn)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = image.astype(int)
 
-    truArr = ((image[::, ::, 0] + image[::, ::, 1]) * 0.7) < image[::, ::, 2]
+    truArr = ((image[::, ::, 0] + image[::, ::, 1]) * 0.9) < image[::, ::, 2]
     if dec:
         power -= 0.1
         if power <= 0:
@@ -131,9 +130,9 @@ tens = tens.float()
 print(net(tens))
 tt = 0
 
-conArr = np.zeros((finalNnSize+2,finalNnSize+2))
-conArr[0:finalNnSize:,-2] = 1
-conArr[-2,-1] = 1
+conArr = np.zeros((finalNnSize+1,finalNnSize+1))
+conArr[0:finalNnSize:,-1] = 1
+
 
 connArr = conArr.flatten()
 
@@ -146,11 +145,10 @@ for y in range(siz):
         pos += "C-{0}-{1}_0_{2}_{3}/".format(y,x,y,x)
         names += "C-{0}-{1}/".format(y, x)
 pos += "T_1_0_0/"
-pos += "O_2_0_0/"
-names += "T/O/"
+names += "T/"
 
 
-rospy.init_node('pytorch3', anonymous=True)
+rospy.init_node('roboCam', anonymous=True)
 
 pubName = rospy.Publisher('/neurovis/neuronName', String, queue_size=1)
 pubCon = rospy.Publisher('/neurovis/connections', Float32MultiArray, queue_size=1)
@@ -163,7 +161,7 @@ pubUpdDis = rospy.Publisher('/neurovis/updateDisplay', Int32MultiArray, queue_si
 fwd = rospy.Publisher('/morf_hcmd/morf_fwd_speed', Float32MultiArray, queue_size=1)
 
 
-rate = rospy.Rate(3)  # 3hz
+rate = rospy.Rate(2)  # 3hz
 
 
 # a.layout.dim.append(thing)
@@ -216,7 +214,8 @@ while not rospy.is_shutdown():
     tens = torch.reshape(tens, (1, 1, picSize, picSize))
     tens = tens.float()
     out = net(tens)
-
+    if out < 0.7:
+        out = 0
     tempPic = tens.detach().numpy()
     tempPic = np.abs(tempPic)
     tempPic = np.rot90(tempPic, 1)
@@ -237,8 +236,13 @@ while not rospy.is_shutdown():
 
     publish1DArrInt(pubUpdDis, tempPic)
 
-    act = np.concatenate((net.reluOutArr,net.relu1OutArr,net.outOutArr))
+    act = np.concatenate((net.reluOutArr,net.relu1OutArr))
     publish1DArr(pubAct, act)
+    print(net.relu1OutArr[0])
+    if net.relu1OutArr[0]<0.05:
+        net.relu1OutArr[0] = 0
+    if net.relu1OutArr[0]>=1.0:
+        net.relu1OutArr[0] = 1.0
 
     publish1DArr(fwd,net.relu1OutArr)
 

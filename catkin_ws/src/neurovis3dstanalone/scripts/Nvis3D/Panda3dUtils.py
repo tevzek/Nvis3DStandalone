@@ -243,7 +243,6 @@ class guiControler():
                                           text_align=TextNode.ACenter
                                           )
 
-
     def setTextInput(self, text):
         self.inputTextLabel.setText(text)
 
@@ -868,7 +867,7 @@ class guiControler():
         self.tabDisplay.setPos(0, 0, -0.11)
         self.tabDisplay.setTag("tabName", "dis")
 
-        titleLabel = DirectLabel(text="Data dysplays:",
+        titleLabel = DirectLabel(text="Data displays:",
                                  parent=self.tabDisplay,
                                  scale=0.05,
                                  pos=(-0.5, 0, -0.05),

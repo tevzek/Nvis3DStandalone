@@ -54,8 +54,6 @@ class NeurovisInterface:
     self.amIsetingDisplayText = True
     self.textToSet = text
 
-
-
   def findIndexOfNeuronById(self,id):
     #method finds neuron by id todo make with pointers cus speed
     for x in range(len(self.neurons)):
@@ -174,7 +172,7 @@ class NeurovisInterface:
           fromN = self.neurons[k]
           toN = self.neurons[keys[indix]]
 
-          conn = NeuronConnection(fromN,toN)
+          conn = NeuronConnection(fromN,toN,weight=c)
           self.conIds +=1
           fromN.connectionsOut.append(conn)
           toN.connectionsIn.append(conn)
@@ -204,6 +202,27 @@ class NeurovisInterface:
     #every time we get a input we move the neurons
     if(self.corelate):
       self.corelateMovment()
+
+  def setWeights(self,arr):
+    count = int(len(arr)//3)
+    indx = 1
+    while indx<=count:
+      fromm = arr[indx*count]
+      to = arr[indx * count + 1]
+      weight = arr[indx * count + 2]
+      indx += 1
+      listt = list(self.neurons.items())
+      fromN = listt[fromm]
+      toN = listt[to]
+      conn = self.neurons[fromN].findConnectionOutByName(toN)
+      conn.updateWeight(weight)
+
+  def setWeightsAll(self,arr):
+    indx = 0
+    for n in list(self.neurons.values()):
+      for c in n.connectionsOut:
+        c.updateWeight(arr[indx])
+        indx += 1
 
   def stopCorelationMovment(self):
     self.correlationMethod = ""

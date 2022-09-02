@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 import math
+from threading import Thread
 from time import sleep
 
 import numpy as np
 
 import rospy
-from std_msgs.msg import String, Float32MultiArray, Int32MultiArray
 from NeurovisInterface import NeurovisInterface
 from Nvis3D import NeuroVis3D
-from threading import Thread
+from std_msgs.msg import String, Float32MultiArray, Int32MultiArray
 
 ninterface = NeurovisInterface()
 N3d = None
@@ -132,12 +132,43 @@ def updateDisplay(data):
         else:
             sleep(0.1)
 
+def updateWeights(data):
+    #from to weight from2 to2 weight2 ...
+    arr = np.array(data.data)
+    while (True):
+        if (ninterface.populated):
+            try:
+                ninterface.setWeights(arr)
+            except Exception as e:
+                print("updateWeights")
+
+                print(e.__str__())
+            break
+        else:
+            sleep(0.1)
+def updateWeightsAll(data):
+    #from to weight from2 to2 weight2 ...
+    arr = np.array(data.data)
+    while (True):
+        if (ninterface.populated):
+            try:
+                ninterface.setWeightsAll(arr)
+            except Exception as e:
+                print("updateWeightsAll")
+
+                print(e.__str__())
+            break
+        else:
+            sleep(0.1)
+
 def listener():
     rospy.get_caller_id()
     rospy.Subscriber("/neurovis/neuronName", String, setNames)
     rospy.Subscriber("/neurovis/neuronPos", String, setPositions)
     rospy.Subscriber("/neurovis/connections", Float32MultiArray, setConnections)
     rospy.Subscriber("/neurovis/connectionsLayers", String, fullyConnectLayers)
+    rospy.Subscriber("/neurovis/weightsAll", Float32MultiArray, updateWeightsAll)
+
 
     rospy.Subscriber("/neurovis/activity", Float32MultiArray, setActivity)
 
@@ -152,7 +183,7 @@ def listener():
     rospy.spin()
 
 rospy.init_node('NeuroVis3D')
-rate = rospy.Rate(10)
+rate = rospy.Rate(100)
 
 nThread = Thread(target=listener)
 nThread.start()
